@@ -92,23 +92,10 @@ static NSError *YouTubeError(NSError *error, NSSet *regionsAllowed, NSString *la
 	NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration ephemeralSessionConfiguration];
 	_cookies = [cookies copy];
 	_customPatterns = [customPatterns copy];
-	
-	for (NSHTTPCookie *cookie in _cookies) {
-		[configuration.HTTPCookieStorage setCookie:cookie];
-	}
-	
-	NSString *cookieValue = [NSString stringWithFormat:@"f1=50000000&f6=8&hl=%@", _languageIdentifier];
-	
-	NSHTTPCookie *additionalCookie = [NSHTTPCookie cookieWithProperties:@{
-																		NSHTTPCookiePath: @"/",
-																		NSHTTPCookieName: @"PREF",
-																		NSHTTPCookieValue: cookieValue,
-																		NSHTTPCookieDomain:@".youtube.com",
-																		NSHTTPCookieSecure:@"TRUE"
-	}];
-
-	[configuration.HTTPCookieStorage setCookie:additionalCookie];
 	configuration.HTTPAdditionalHeaders = @{@"User-Agent": @"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15"};
+	NSHTTPCookieStorage *cs = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+	[cs setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyAlways];
+	configuration.HTTPCookieStorage = cs;
 	_session = [NSURLSession sessionWithConfiguration:configuration];
 	_operationStartSemaphore = dispatch_semaphore_create(0);
 	
@@ -215,6 +202,18 @@ static NSError *YouTubeError(NSError *error, NSSet *regionsAllowed, NSString *la
 	NSString *responseString = CFBridgingRelease(CFStringCreateWithBytes(kCFAllocatorDefault, data.bytes, (CFIndex)data.length, encoding != kCFStringEncodingInvalidId ? encoding : kCFStringEncodingMacRoman, false)) ?: @"";
 	
 	XCDYouTubeLogVerbose(@"Response: %@\n%@", response, responseString);
+	
+	if ([responseString containsString:@"https://consent.youtube.com"]) {
+		//See more here https://github.com/0xced/XCDYouTubeKit/issues/523
+		NSMutableDictionary *errorUserInfo = [NSMutableDictionary dictionary];
+		errorUserInfo[@"consentHtmlData"] = responseString;
+		
+		self.error = [NSError errorWithDomain:XCDYouTubeVideoErrorDomain code:XCDYouTubeConsentError userInfo:errorUserInfo];
+		[self finish];
+
+		return;
+	}
+	
 	if ([(NSHTTPURLResponse *)response statusCode] == 429)
 	{
 		//See 429 indicates too many requests https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429

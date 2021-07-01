@@ -10,6 +10,8 @@
 
 #import "ContextLogFormatter.h"
 #import "XCDYouTubeKit_iOS_Demo-Swift.h"
+#import "ConsentViewController.h"
+
 
 @implementation AppDelegate
 
@@ -75,6 +77,7 @@ static void InitializeAppearance(UINavigationController *rootViewController)
 	InitializeUserDefaults();
 	InitializeAudioSession();
 	InitializeAppearance((UINavigationController *)self.window.rootViewController);
+	[self checkConsent];
 	return YES;
 }
 
@@ -85,6 +88,21 @@ static void InitializeAppearance(UINavigationController *rootViewController)
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {
 	[[AVPlayerViewControllerManager shared]reconnectPlayerWithRootViewController:self.window.rootViewController];
+}
+
+-(void)checkConsent {
+	[[XCDYouTubeClient defaultClient] getVideoWithIdentifier:@"6v2L2UGZJAM" completionHandler:^(XCDYouTubeVideo * _Nullable video, NSError * _Nullable error) {
+		
+		if (error.code == -6) {
+			if (error.userInfo[@"consentHtmlData"] != nil) {
+				NSString* errorResponseString = error.userInfo[@"consentHtmlData"];
+				ConsentViewController* consentVc = [[ConsentViewController alloc] init];
+				consentVc.htmlData = errorResponseString;
+				[self.window.rootViewController presentViewController:consentVc animated:true completion:nil];
+				}
+			
+			}
+	}];
 }
 
 @end

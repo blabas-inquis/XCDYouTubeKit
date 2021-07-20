@@ -375,6 +375,10 @@ static NSDate * ExpirationDate(NSURL *streamURL)
 					reason = [reason stringByReplacingCharactersInRange:range withString:@""];
 				
 				userInfo[NSLocalizedDescriptionKey] = reason;
+                
+                userInfo[@"playabilityStatus"] = info[@"playabilityStatus"][@"status"];
+                userInfo[@"startTimestamp"] = info[@"playabilityStatus"][@"liveStreamability"][@"liveStreamabilityRenderer"][@"offlineSlate"][@"liveStreamOfflineSlateRenderer"][@"scheduledStartTime"];
+                
 			}
 			
 			*error = [NSError errorWithDomain:XCDYouTubeVideoErrorDomain code:XCDYouTubeErrorNoStreamAvailable userInfo:userInfo];
@@ -385,7 +389,7 @@ static NSDate * ExpirationDate(NSURL *streamURL)
 
 static NSString *XCDReasonForErrorWithDictionary(NSDictionary *info, NSString *playerResponse)
 {
-	NSString *reason = info[@"reason"] == nil ? XCDDictionaryWithString(playerResponse)[@"playabilityStatus"][@"reason"] : info[@"reason"];
+	NSString *reason = info[@"playabilityStatus"][@"reason"] == nil ? XCDDictionaryWithString(playerResponse)[@"playabilityStatus"][@"reason"] : info[@"playabilityStatus"][@"reason"];
 	NSDictionary *subReason =  XCDDictionaryWithString(playerResponse)[@"playabilityStatus"][@"errorScreen"][@"playerErrorMessageRenderer"][@"subreason"];
 	NSArray<NSDictionary *>* runs = subReason[@"runs"];
 	NSString *runsMessage = @"";

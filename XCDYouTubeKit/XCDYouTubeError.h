@@ -46,6 +46,11 @@ typedef NS_ENUM(NSInteger, XCDYouTubeErrorCode) {
 	*/
 	XCDYouTubeErrorUnknown = -5,
 	/**
+	 * Returned  to consent error.
+	*/
+	
+	XCDYouTubeConsentError = -6,
+	/**
 	 *  Previously returned when the given video identifier string is invalid.
 	 *  Use `XCDYouTubeErrorNoStreamAvailable` instead.
 	 */

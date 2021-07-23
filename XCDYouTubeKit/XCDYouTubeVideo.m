@@ -170,7 +170,10 @@ static NSDate * ExpirationDate(NSURL *streamURL)
 	NSString *playerResponse = info[@"player_response"];
 	NSString *streamMap = info[@"url_encoded_fmt_stream_map"];
 	NSArray *alternativeStreamMap = XCDStreamingDataWithString(playerResponse)[@"formats"] == nil ? info[@"streamingData"][@"formats"] : XCDStreamingDataWithString(playerResponse)[@"formats"];
-	NSString *httpLiveStream = info[@"hlsvp"] ?: XCDHTTPLiveStreamingStringWithString(playerResponse);
+    NSString *httpLiveStream = info[@"hlsvp"] ?: XCDHTTPLiveStreamingStringWithString(playerResponse);
+    if (httpLiveStream.length == 0) {
+        httpLiveStream = info[@"streamingData"][@"hlsManifestUrl"];
+    }
 	NSString *adaptiveFormats = info[@"adaptive_fmts"];
 	NSArray *alternativeAdaptiveFormats = XCDStreamingDataWithString(playerResponse)[@"adaptiveFormats"]  == nil ? info[@"streamingData"][@"adaptiveFormats"] : XCDStreamingDataWithString(playerResponse)[@"adaptiveFormats"];
 	NSDictionary *videoDetails = XCDDictionaryWithString(playerResponse)[@"videoDetails"] == nil ? info[@"videoDetails"] : XCDDictionaryWithString(playerResponse)[@"videoDetails"];
@@ -372,6 +375,10 @@ static NSDate * ExpirationDate(NSURL *streamURL)
 					reason = [reason stringByReplacingCharactersInRange:range withString:@""];
 				
 				userInfo[NSLocalizedDescriptionKey] = reason;
+                
+                userInfo[@"playabilityStatus"] = info[@"playabilityStatus"][@"status"];
+                userInfo[@"startTimestamp"] = info[@"playabilityStatus"][@"liveStreamability"][@"liveStreamabilityRenderer"][@"offlineSlate"][@"liveStreamOfflineSlateRenderer"][@"scheduledStartTime"];
+                
 			}
 			
 			*error = [NSError errorWithDomain:XCDYouTubeVideoErrorDomain code:XCDYouTubeErrorNoStreamAvailable userInfo:userInfo];
@@ -382,7 +389,7 @@ static NSDate * ExpirationDate(NSURL *streamURL)
 
 static NSString *XCDReasonForErrorWithDictionary(NSDictionary *info, NSString *playerResponse)
 {
-	NSString *reason = info[@"reason"] == nil ? XCDDictionaryWithString(playerResponse)[@"playabilityStatus"][@"reason"] : info[@"reason"];
+	NSString *reason = info[@"playabilityStatus"][@"reason"] == nil ? XCDDictionaryWithString(playerResponse)[@"playabilityStatus"][@"reason"] : info[@"playabilityStatus"][@"reason"];
 	NSDictionary *subReason =  XCDDictionaryWithString(playerResponse)[@"playabilityStatus"][@"errorScreen"][@"playerErrorMessageRenderer"][@"subreason"];
 	NSArray<NSDictionary *>* runs = subReason[@"runs"];
 	NSString *runsMessage = @"";

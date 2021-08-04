@@ -203,17 +203,6 @@ static NSError *YouTubeError(NSError *error, NSSet *regionsAllowed, NSString *la
 	
 	XCDYouTubeLogVerbose(@"Response: %@\n%@", response, responseString);
 	
-	if ([responseString containsString:@"https://consent.youtube.com"]) {
-		//See more here https://github.com/0xced/XCDYouTubeKit/issues/523
-		NSMutableDictionary *errorUserInfo = [NSMutableDictionary dictionary];
-		errorUserInfo[@"consentHtmlData"] = responseString;
-		
-		self.error = [NSError errorWithDomain:XCDYouTubeVideoErrorDomain code:XCDYouTubeConsentError userInfo:errorUserInfo];
-		[self finish];
-
-		return;
-	}
-	
 	if ([(NSHTTPURLResponse *)response statusCode] == 429)
 	{
 		//See 429 indicates too many requests https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
